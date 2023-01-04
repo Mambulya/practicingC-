@@ -2,7 +2,7 @@
 using namespace std;
 
 double find_min(double y[30]) {
-	double MIN = 1000000000000000000;
+	double MIN = 1000000000000000000; 
 	for (int i = 0; i < 30; i++) {
 		if (y[i] < MIN)
 			MIN = y[i];
