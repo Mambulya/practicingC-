@@ -12,7 +12,7 @@ void reword() {
 	cin >> prev;
 	prev = prev.substr(0, prev.size() - 1);
 
-	cin >> word;
+	cin >> word; 
 	word = word.substr(0, word.size() - 1);
 
 
