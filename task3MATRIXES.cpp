@@ -5,6 +5,70 @@
 using namespace std;
 
 
+int** create_matrix(int m, int n) 
+{ 
+ int** a = new int* [m]; 
+ for (int i = 0; i < m; i++) 
+  a[i] = new int[n]; 
+ return a; 
+} 
+ 
+void print_matrix(int** a, int m, int n, ofstream& out) 
+{ 
+ for (int i = 0; i < m; i++) 
+ { 
+  for (int j = 0; j < n; j++) 
+   out << a[i][j] << " "; 
+  out << endl; 
+ } 
+} 
+ 
+int** sum_matrix(int** a, int** b, int m, int n) 
+{ 
+ int** D = create_matrix(m, n); 
+ 
+ for (int i = 0; i < m; i++) 
+ { 
+  for (int j = 0; j < n; j++) 
+  { 
+   D[i][j] = a[i][j] + b[i][j]; 
+  } 
+ } 
+ return D; 
+} 
+ 
+int** transposed(int** d, int m, int n) 
+{ 
+ int** H = create_matrix(n, m); 
+ 
+ for (int i = 0; i < n; i++) 
+ { 
+  for (int j = 0; j < m; j++) 
+  { 
+   H[i][j] = d[j][i]; 
+  } 
+ } 
+ 
+ return H; 
+} 
+ 
+int** mult_matrix(int** a, int** b, int n) 
+{ // умножение работает только на квадратные матрицы 
+ 
+ int** c = create_matrix(n, n); 
+ 
+ for (int i = 0; i < n; i++) 
+ { 
+  for (int j = 0; j < n; j++) 
+  { 
+   c[i][j] = 0; 
+   for (int k = 0; k < n; k++) 
+    c[i][j] += a[i][k] * b[k][j]; 
+  } 
+ } 
+ return c; 
+} 
+ 
 int main() 
 {
 	ifstream in("C:/Users/yashn/OneDrive/Documents/in1.txt", ios:: app);
