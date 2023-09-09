@@ -275,6 +275,7 @@ ComplexNumber ComplexNumber::pow(double t)
 	double p = this->arg();
 	res.a = std::pow(r, t) * std::cos(t * p);
 	res.b = std::pow(r, t) * std::sin(t * p);
+	return res;
 }
 
 bool ComplexNumber::equals(ComplexNumber z)
