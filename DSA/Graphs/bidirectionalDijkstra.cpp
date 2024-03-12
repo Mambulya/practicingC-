@@ -1,4 +1,3 @@
-```
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -20,6 +19,7 @@ private:
     int numV;
     vector<vector<Edge>> adjList;
     int** adjMatrix = new int* [numV];
+    vector<vector<Edge>> reversedList;
 
 public:
     Graph(int verticles) {
@@ -40,6 +40,14 @@ public:
         }
     }
 
+    void reverse() {
+        reversedList.resize(numV);
+        for (int v = 0; v < numV; v++) {
+            for (const Edge& edge : adjList[v]) {
+                reversedList[edge.destination].push_back(Edge(v, edge.weight));
+            }
+        }
+    }
 
     void printGraphL() {
         cout << "Graph:\n";
@@ -79,43 +87,14 @@ public:
     }
 
 
-    // Алгоритм Дейкстры для поиска кратчайших путей от исходной вершины src до всех остальных вершин
-    vector<int> dijkstra(int src) {
-        vector<int> dist(numV, numeric_limits<int>::max()); // расстояния до всех вершин как бесконечность
-        dist[src] = 0; // 
-
-        // Создаем возрастающую приоритетную очередь из (dist(s), s)
-        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
-        pq.push({ 0, src });
-
-        while (!pq.empty()) {
-            int u = pq.top().second;
-            pq.pop();
-
-            // Обходим всех соседей вершины u
-            for (const Edge& edge : adjList[u]) {
-                int v = edge.destination;
-                int weight = edge.weight;
-
-                // Если нашли более короткий путь к вершине v, обновляем расстояние
-                if (dist[v] > dist[u] + weight) {
-                    dist[v] = dist[u] + weight;
-                    pq.push({ dist[v], v });
-                }
-            }
-        }
-
-        return dist;
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Двухсторонний алгоритм Дейкстры для поиска кратчайшего пути между начальной и конечной вершинами
     int bidirectionalDijkstra(int source, int target) {
+        if (source == target)
+            return 0;
+
         // Инициализация расстояний от начальной и конечной вершин до всех остальных вершин как бесконечность
         vector<int> distSource(numV, numeric_limits<int>::max());
         vector<int> distTarget(numV, numeric_limits<int>::max());
 
-        // Инициализация расстояний от начальной и конечной вершин до самих себя как 0
         distSource[source] = 0;
         distTarget[target] = 0;
 
@@ -123,17 +102,19 @@ public:
         priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pqSource;
         priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pqTarget;
 
-        pqSource.push({ 0, source }); // Добавляем начальную вершину в очередь с расстоянием 0
-        pqTarget.push({ 0, target }); // Добавляем конечную вершину в очередь с расстоянием 0
+        pqSource.push({ 0, source });
+        pqTarget.push({ 0, target }); 
+
+        this->reverse();
 
         while (!pqSource.empty() && !pqTarget.empty()) {
-            // Поочередно ищем кратчайшие пути от начальной и конечной вершин
-            int distanceSource = bidirectionalDijkstraHelper(pqSource, distSource, distTarget);
-            if (distanceSource != -1)
+            // Поочередно запускаем Дейкстры
+            int distanceSource = dijkstra(pqSource, distSource, distTarget, adjList); // frontDijkstra
+            if (distanceSource != -1)   // если frontDijkstra встретилась с backDijkstra
                 return distanceSource;
 
-            int distanceTarget = bidirectionalDijkstraHelper(pqTarget, distTarget, distSource);
-            if (distanceTarget != -1)
+            int distanceTarget = dijkstra(pqTarget, distTarget, distSource, reversedList); // backDijkstra
+            if (distanceTarget != -1)   // если backDijkstra встретилась с frontDijkstra
                 return distanceTarget;
         }
 
@@ -143,14 +124,16 @@ public:
 
     private:
         // Вспомогательная функция для двухстороннего алгоритма Дейкстры
-        int bidirectionalDijkstraHelper(priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>>& pq,
+        int dijkstra(priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>>& pq,
             vector<int>& dist,
-            const vector<int>& otherDist) {
+            const vector<int>& otherDist, vector<vector<Edge>> list) {
+
+            int minDist = numeric_limits<int>::max();
             int u = pq.top().second;
             pq.pop();
 
             // Обходим всех соседей вершины u
-            for (const Edge& edge : adjList[u]) {
+            for (const Edge& edge : list[u]) {
                 int v = edge.destination;
                 int weight = edge.weight;
 
@@ -159,16 +142,16 @@ public:
                     dist[v] = dist[u] + weight;
                     pq.push({ dist[v], v });
 
-                    // Если найденное расстояние до вершины v меньше, чем текущее расстояние от другой стороны,
-                    // значит, мы нашли кратчайший путь между начальной и конечной вершинами
+                    // Если найденное расстояние до вершины v = бесконечность,
+                    // значит вторая дейкстра до неё еще не дошла
                     if (otherDist[v] != numeric_limits<int>::max())
-                        return dist[v];
+                        minDist = min(dist[v] + otherDist[v], minDist);  // складываем пути
                 }
             }
-
-            return -1;
+            if (minDist != numeric_limits<int>::max())
+                return minDist;
+            return -1;  // дейкстры ещё не встретились
         }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
 
 
@@ -184,28 +167,28 @@ int main() {
     
     int V;
     source >> V;
-    Graph graph(V);
+    Graph myGraph(V);
 
     int V1, V2, W;
     while (source >> V1 >> V2 >> W) {
-        graph.addEdge(V1, V2, W);
+        myGraph.addEdge(V1, V2, W);
     }
         
-    graph.printGraphL();
-    graph.toMatrix();
+    myGraph.printGraphL();
+    myGraph.toMatrix();
 
     cout << "Adjency matrix:" << endl;
-    graph.printGraphM();
+    myGraph.printGraphM();
+
+    cout << "Bidirectional Dijkstra:\n";
+    cout << myGraph.bidirectionalDijkstra(0, 0) << endl;
+    cout << myGraph.bidirectionalDijkstra(0, 1) << endl;
+    cout << myGraph.bidirectionalDijkstra(0, 2) << endl;
+    cout << myGraph.bidirectionalDijkstra(0, 3) << endl;
+    cout << myGraph.bidirectionalDijkstra(0, 4) << endl;
 
 
-    // Вызов алгоритма Дейкстры для поиска кратчайших путей от вершины 0
-    cout << "\nThe length from verticle #0 to other verticles:\n";
-    vector<int> distances = graph.dijkstra(0);
-    for (int i = 0; i < distances.size(); ++i) {
-        cout << "The length from the verticle # " << i << " = " << distances[i] << endl;
-    }
 
     source.close();
     return 0;
 }
-```
